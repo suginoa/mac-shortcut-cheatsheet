@@ -174,6 +174,7 @@ app.on('will-quit', () => {
 });
 
 ipcMain.on('quit', () => app.quit());
+ipcMain.on('hide-window', () => { if (win) win.hide(); });
 
 // IPC: レンダラーから現在アプリ情報を要求
 ipcMain.handle('get-current-app', () => ({

@@ -164,7 +164,7 @@
   <span style="font-size:18px">⌨️</span>
   <span class="app-name" id="appName">システム共通</span>
   <button class="fav-btn" id="favToggle" title="お気に入りのみ表示">☆</button>
-  <button class="quit-btn" id="quitBtn" title="終了">✕</button>
+  <button class="quit-btn" id="quitBtn" title="隠す（Cmd+Shift+K で再表示）">✕</button>
 </div>
 
 <div class="search-wrap">
@@ -237,7 +237,7 @@ document.getElementById('favToggle').addEventListener('click', () => {
 });
 
 document.getElementById('quitBtn').addEventListener('click', () => {
-  require('electron').remote?.app.quit() || ipcRenderer.send('quit');
+  ipcRenderer.send('hide-window'); // ✕は隠すだけ（Cmd+Q で完全終了）
 });
 
 document.getElementById('searchInput').addEventListener('input', e => {
