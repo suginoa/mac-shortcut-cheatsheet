@@ -1,16 +1,47 @@
 {
   "name": "shortcut-cheatsheet",
   "version": "1.0.0",
-  "description": "",
+  "description": "Macで使っているアプリのショートカットキーを右上に常駐表示するアプリ",
   "main": "main.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "electron .",
+    "build": "electron-builder --mac --arm64 --x64"
   },
   "keywords": [],
-  "author": "",
+  "author": "suginoa",
   "license": "ISC",
   "type": "commonjs",
+  "build": {
+    "appId": "com.suginoa.shortcut-cheatsheet",
+    "productName": "ShortcutCheatSheet",
+    "directories": {
+      "output": "../dist"
+    },
+    "mac": {
+      "category": "public.app-category.productivity",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "arm64",
+            "x64"
+          ]
+        }
+      ],
+      "icon": null
+    },
+    "dmg": {
+      "title": "ShortcutCheatSheet"
+    },
+    "files": [
+      "main.js",
+      "index.html",
+      "shortcuts.js",
+      "package.json"
+    ]
+  },
   "devDependencies": {
-    "electron": "^41.2.0"
+    "electron": "^41.2.0",
+    "electron-builder": "^25.1.8"
   }
 }

@@ -34,10 +34,25 @@
 
 ## インストール
 
+### 方法A：DMGをダウンロード（簡単・Node.js不要）
+
+[Releases](https://github.com/suginoa/mac-shortcut-cheatsheet/releases/latest) から自分のMacに合ったファイルをダウンロードしてください。
+
+| Mac | ファイル |
+|-----|---------|
+| Apple Silicon (M1/M2/M3/M4) | `ShortcutCheatSheet-1.0.0-arm64.dmg` |
+| Intel Mac | `ShortcutCheatSheet-1.0.0.dmg` |
+
+1. DMGを開いて `ShortcutCheatSheet.app` をアプリケーションフォルダにドラッグ
+2. 初回は右クリック → 「開く」で起動（Gatekeeperの警告が出る場合）
+
+### 方法B：ソースから実行（開発者向け）
+
 ```bash
 git clone https://github.com/suginoa/mac-shortcut-cheatsheet.git
-cd mac-shortcut-cheatsheet
-cd electron-app && npm install && cd ..
+cd mac-shortcut-cheatsheet/electron-app
+npm install
+./node_modules/.bin/electron .
 ```
 
 ### 自動起動の設定（オプション）
