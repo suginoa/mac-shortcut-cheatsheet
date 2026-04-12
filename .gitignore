@@ -1,0 +1,5 @@
+.build/
+.DS_Store
+.claude/
+electron-app/node_modules/
+*.log

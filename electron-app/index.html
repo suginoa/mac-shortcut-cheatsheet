@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ショートカット</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', sans-serif;
+    font-size: 13px;
+    background: #ffffff;
+    color: #1a1a1a;
+    overflow: hidden;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    border-radius: 12px;
+    border: 1px solid rgba(0,0,0,0.15);
+    box-shadow: 0 8px 30px rgba(0,0,0,0.2);
+  }
+
+  /* ヘッダー */
+  .header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px 8px;
+    background: #f5f5f7;
+    border-bottom: 1px solid #e0e0e0;
+    flex-shrink: 0;
+    border-radius: 12px 12px 0 0;
+  }
+  .app-name {
+    font-size: 14px;
+    font-weight: 600;
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .fav-btn, .quit-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 3px 6px;
+    border-radius: 5px;
+    font-size: 13px;
+    color: #555;
+  }
+  .fav-btn:hover, .quit-btn:hover { background: rgba(0,0,0,0.08); }
+  .fav-btn.active { color: #f0a500; }
+
+  /* 検索バー */
+  .search-wrap {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 12px;
+    background: #fafafa;
+    border-bottom: 1px solid #e8e8e8;
+    flex-shrink: 0;
+  }
+  .search-icon { color: #888; font-size: 12px; }
+  .search-wrap input {
+    flex: 1;
+    border: none;
+    outline: none;
+    font-size: 13px;
+    background: transparent;
+    color: #1a1a1a;
+  }
+  .search-wrap input::placeholder { color: #aaa; }
+  .clear-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #aaa;
+    font-size: 14px;
+    padding: 0;
+    line-height: 1;
+  }
+  .clear-btn:hover { color: #555; }
+
+  /* リスト */
+  .list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 4px 0;
+  }
+  .list::-webkit-scrollbar { width: 5px; }
+  .list::-webkit-scrollbar-thumb { background: #ccc; border-radius: 3px; }
+
+  .section-header {
+    font-size: 10px;
+    font-weight: 600;
+    color: #888;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 8px 12px 3px;
+    position: sticky;
+    top: 0;
+    background: #ffffff;
+  }
+
+  .row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 10px 4px 12px;
+    transition: background 0.1s;
+  }
+  .row:hover { background: #f0f0f5; }
+
+  .keys {
+    font-family: 'SF Mono', 'Menlo', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    background: rgba(0,0,0,0.07);
+    border: 0.5px solid rgba(0,0,0,0.15);
+    border-radius: 5px;
+    padding: 2px 6px;
+    min-width: 60px;
+    text-align: center;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .desc {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 12.5px;
+  }
+
+  .star-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 13px;
+    color: #ccc;
+    padding: 0 2px;
+    line-height: 1;
+    flex-shrink: 0;
+  }
+  .star-btn.active { color: #f0a500; }
+  .star-btn:hover { color: #f0a500; }
+
+  .empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: #aaa;
+    font-size: 13px;
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <span style="font-size:18px">⌨️</span>
+  <span class="app-name" id="appName">システム共通</span>
+  <button class="fav-btn" id="favToggle" title="お気に入りのみ表示">☆</button>
+  <button class="quit-btn" id="quitBtn" title="終了">✕</button>
+</div>
+
+<div class="search-wrap">
+  <span class="search-icon">🔍</span>
+  <input type="text" id="searchInput" placeholder="検索...">
+  <button class="clear-btn" id="clearBtn" style="display:none">✕</button>
+</div>
+
+<div class="list" id="list"></div>
+
+<script>
+const { ipcRenderer } = require('electron');
+const shortcuts = require('./shortcuts.js');
+
+let currentKey = 'common';
+let currentAppName = 'システム共通';
+let showFavsOnly = false;
+let searchText = '';
+let favorites = JSON.parse(localStorage.getItem('favorites') || '[]');
+
+// --- レンダリング ---
+function getFilteredGroups() {
+  const base = [...(shortcuts[currentKey] || []), ...(currentKey !== 'common' ? shortcuts.common : [])];
+  const filtered = base.filter(s => {
+    const matchSearch = !searchText ||
+      s.desc.toLowerCase().includes(searchText.toLowerCase()) ||
+      s.keys.toLowerCase().includes(searchText.toLowerCase());
+    const matchFav = !showFavsOnly || favorites.includes(s.keys + s.desc);
+    return matchSearch && matchFav;
+  });
+  // カテゴリでグループ化
+  const groups = {};
+  filtered.forEach(s => {
+    if (!groups[s.cat]) groups[s.cat] = [];
+    groups[s.cat].push(s);
+  });
+  return groups;
+}
+
+function render() {
+  const list = document.getElementById('list');
+  const groups = getFilteredGroups();
+  const keys = Object.keys(groups);
+
+  if (keys.length === 0) {
+    list.innerHTML = `<div class="empty">${showFavsOnly ? 'お気に入りはありません' : '見つかりません'}</div>`;
+    return;
+  }
+
+  list.innerHTML = keys.map(cat => `
+    <div class="section-header">${cat}</div>
+    ${groups[cat].map(s => {
+      const id = s.keys + s.desc;
+      const isFav = favorites.includes(id);
+      return `<div class="row">
+        <span class="keys">${s.keys}</span>
+        <span class="desc">${s.desc}</span>
+        <button class="star-btn ${isFav ? 'active' : ''}" data-id="${encodeURIComponent(id)}">${isFav ? '★' : '☆'}</button>
+      </div>`;
+    }).join('')}
+  `).join('');
+}
+
+// --- イベント ---
+document.getElementById('favToggle').addEventListener('click', () => {
+  showFavsOnly = !showFavsOnly;
+  document.getElementById('favToggle').classList.toggle('active', showFavsOnly);
+  document.getElementById('favToggle').textContent = showFavsOnly ? '★' : '☆';
+  render();
+});
+
+document.getElementById('quitBtn').addEventListener('click', () => {
+  require('electron').remote?.app.quit() || ipcRenderer.send('quit');
+});
+
+document.getElementById('searchInput').addEventListener('input', e => {
+  searchText = e.target.value;
+  document.getElementById('clearBtn').style.display = searchText ? 'block' : 'none';
+  render();
+});
+
+document.getElementById('clearBtn').addEventListener('click', () => {
+  searchText = '';
+  document.getElementById('searchInput').value = '';
+  document.getElementById('clearBtn').style.display = 'none';
+  render();
+});
+
+document.getElementById('list').addEventListener('click', e => {
+  const btn = e.target.closest('.star-btn');
+  if (!btn) return;
+  const id = decodeURIComponent(btn.dataset.id);
+  const idx = favorites.indexOf(id);
+  if (idx >= 0) favorites.splice(idx, 1);
+  else favorites.push(id);
+  localStorage.setItem('favorites', JSON.stringify(favorites));
+  render();
+});
+
+// アプリ切り替え通知
+ipcRenderer.on('app-changed', (_, data) => {
+  currentKey = data.key;
+  currentAppName = data.appName;
+  document.getElementById('appName').textContent = currentAppName;
+  searchText = '';
+  document.getElementById('searchInput').value = '';
+  document.getElementById('clearBtn').style.display = 'none';
+  render();
+});
+
+// 終了
+ipcRenderer.on('quit', () => require('electron').app?.quit());
+
+// 初期化
+ipcRenderer.invoke('get-current-app').then(data => {
+  currentKey = data.key;
+  currentAppName = data.appName;
+  document.getElementById('appName').textContent = currentAppName;
+  render();
+});
+</script>
+</body>
+</html>
