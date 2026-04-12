@@ -156,9 +156,34 @@
     color: #aaa;
     font-size: 13px;
   }
+
+  /* リサイズハンドル（枠の上に重ねる不可視領域） */
+  .resize-handle {
+    position: fixed;
+    z-index: 10000;
+    -webkit-app-region: no-drag;
+  }
+  .resize-handle[data-dir="n"]  { top: 0;    left: 8px;  right: 8px;  height: 5px; cursor: n-resize;  }
+  .resize-handle[data-dir="s"]  { bottom: 0; left: 8px;  right: 8px;  height: 5px; cursor: s-resize;  }
+  .resize-handle[data-dir="e"]  { right: 0;  top: 8px;   bottom: 8px; width:  5px; cursor: e-resize;  }
+  .resize-handle[data-dir="w"]  { left: 0;   top: 8px;   bottom: 8px; width:  5px; cursor: w-resize;  }
+  .resize-handle[data-dir="ne"] { top: 0;    right: 0;   width: 10px; height: 10px; cursor: ne-resize; }
+  .resize-handle[data-dir="nw"] { top: 0;    left: 0;    width: 10px; height: 10px; cursor: nw-resize; }
+  .resize-handle[data-dir="se"] { bottom: 0; right: 0;   width: 10px; height: 10px; cursor: se-resize; }
+  .resize-handle[data-dir="sw"] { bottom: 0; left: 0;    width: 10px; height: 10px; cursor: sw-resize; }
 </style>
 </head>
 <body>
+
+<!-- リサイズハンドル -->
+<div class="resize-handle" data-dir="n"></div>
+<div class="resize-handle" data-dir="ne"></div>
+<div class="resize-handle" data-dir="e"></div>
+<div class="resize-handle" data-dir="se"></div>
+<div class="resize-handle" data-dir="s"></div>
+<div class="resize-handle" data-dir="sw"></div>
+<div class="resize-handle" data-dir="w"></div>
+<div class="resize-handle" data-dir="nw"></div>
 
 <div class="header">
   <span style="font-size:18px">⌨️</span>
@@ -277,6 +302,59 @@ ipcRenderer.on('app-changed', (_, data) => {
 
 // 終了
 ipcRenderer.on('quit', () => require('electron').app?.quit());
+
+// --- リサイズ処理 ---
+let isResizing = false;
+let resizeDir = '';
+let resizeStart = {};
+
+document.querySelectorAll('.resize-handle').forEach(handle => {
+  handle.addEventListener('mousedown', async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    isResizing = true;
+    resizeDir = handle.dataset.dir;
+    const bounds = await ipcRenderer.invoke('get-window-bounds');
+    resizeStart = {
+      mouseX: e.screenX,
+      mouseY: e.screenY,
+      winX: bounds.x,
+      winY: bounds.y,
+      winW: bounds.width,
+      winH: bounds.height,
+    };
+  });
+});
+
+document.addEventListener('mousemove', (e) => {
+  if (!isResizing || !resizeStart.winW) return;
+  const dx = e.screenX - resizeStart.mouseX;
+  const dy = e.screenY - resizeStart.mouseY;
+  const MIN_W = 280, MIN_H = 200;
+  let { winX, winY, winW, winH } = resizeStart;
+
+  if (resizeDir.includes('e')) winW = Math.max(MIN_W, winW + dx);
+  if (resizeDir.includes('s')) winH = Math.max(MIN_H, winH + dy);
+  if (resizeDir.includes('w')) {
+    const newW = Math.max(MIN_W, winW - dx);
+    winX += winW - newW;
+    winW = newW;
+  }
+  if (resizeDir.includes('n')) {
+    const newH = Math.max(MIN_H, winH - dy);
+    winY += winH - newH;
+    winH = newH;
+  }
+  ipcRenderer.send('resize-window', {
+    x: Math.round(winX), y: Math.round(winY),
+    width: Math.round(winW), height: Math.round(winH),
+  });
+});
+
+document.addEventListener('mouseup', () => {
+  isResizing = false;
+  resizeStart = {};
+});
 
 // 初期化
 ipcRenderer.invoke('get-current-app').then(data => {

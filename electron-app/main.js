@@ -58,9 +58,11 @@ function createWindow() {
     x, y,
     width: winWidth,
     height: winHeight,
+    minWidth: 280,
+    minHeight: 200,
     show: true,
     frame: false,
-    resizable: false,
+    resizable: true,
     alwaysOnTop: true,
     skipTaskbar: false,
     backgroundColor: '#ffffff',
@@ -87,9 +89,11 @@ function toggleWindow() {
   if (win.isVisible()) {
     win.hide();
   } else {
-    // ウィンドウ位置を最新のスクリーンサイズに合わせて更新
-    const { x, y } = getWindowPosition();
-    win.setPosition(x, y);
+    // ウィンドウ位置を画面右上に合わせて更新（サイズは維持）
+    const { workAreaSize } = screen.getPrimaryDisplay();
+    const bounds = win.getBounds();
+    const newX = workAreaSize.width - bounds.width - 10;
+    win.setPosition(newX, 30);
 
     // 現在のアクティブアプリを取得してから表示
     const appName = getFrontmostApp();
@@ -175,6 +179,8 @@ app.on('will-quit', () => {
 
 ipcMain.on('quit', () => app.quit());
 ipcMain.on('hide-window', () => { if (win) win.hide(); });
+ipcMain.on('resize-window', (_, bounds) => { if (win) win.setBounds(bounds, false); });
+ipcMain.handle('get-window-bounds', () => win ? win.getBounds() : null);
 
 // IPC: レンダラーから現在アプリ情報を要求
 ipcMain.handle('get-current-app', () => ({
