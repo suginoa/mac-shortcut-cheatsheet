@@ -42,11 +42,12 @@ function getBundleKey(appName) {
 }
 
 function getWindowPosition() {
-  const { workAreaSize } = screen.getPrimaryDisplay();
+  // 常にメイン（内蔵）ディスプレイの右上に表示
+  const { workArea } = screen.getPrimaryDisplay();
   const winWidth = 390;
   const winHeight = 520;
-  const x = workAreaSize.width - winWidth - 10;
-  const y = 30;
+  const x = workArea.x + workArea.width - winWidth - 10;
+  const y = workArea.y + 30;
   return { x, y, winWidth, winHeight };
 }
 
@@ -89,11 +90,12 @@ function toggleWindow() {
   if (win.isVisible()) {
     win.hide();
   } else {
-    // ウィンドウ位置を画面右上に合わせて更新（サイズは維持）
-    const { workAreaSize } = screen.getPrimaryDisplay();
+    // メインディスプレイの右上に位置を戻す（サイズは維持）
+    const { workArea } = screen.getPrimaryDisplay();
     const bounds = win.getBounds();
-    const newX = workAreaSize.width - bounds.width - 10;
-    win.setPosition(newX, 30);
+    const newX = workArea.x + workArea.width - bounds.width - 10;
+    const newY = workArea.y + 30;
+    win.setPosition(newX, newY);
 
     // 現在のアクティブアプリを取得してから表示
     const appName = getFrontmostApp();
@@ -165,7 +167,7 @@ app.whenReady().then(() => {
 
   // Dockアイコンクリックでウィンドウをトグル（起動直後は無視）
   app.on('activate', () => {
-    if (!appReady) return; // 起動直後のactivateは無視
+    if (!appReady) return;
     toggleWindow();
   });
 });
