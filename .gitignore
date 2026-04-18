@@ -3,3 +3,5 @@
 .claude/
 electron-app/node_modules/
 *.log
+dist/
+*.app/
